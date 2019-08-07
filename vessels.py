@@ -18,25 +18,28 @@ from PIL import Image
 
 # Read metadata and return metadata as object
 def get_metadata(filename):
-	metadata = bf.get_omexml_metadata(filename)
-	#return bf.omexml.OMEXML(metadata)
-	return metadata
+    metadata = bf.get_omexml_metadata(filename)
+    return bf.omexml.OMEXML(metadata)
 
 
 def main() -> int:
-	"""Parameters"""
-	parser = argparse.ArgumentParser()
-	parser.add_argument('-f', '--file', help='File to be processed', required=True)
-	args = parser.parse_args()
+    """Parameters"""
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-f', '--file', help='File to be processed', required=True)
+    args = parser.parse_args()
 
-	# Start javabridge vm
-	jb.start_vm(class_path=bf.JARS, max_heap_size='2G')
-	# Print metadata
-	print(get_metadata(args.file))
+    # Start javabridge vm
+    jb.start_vm(class_path=bf.JARS, max_heap_size='2G')
+
+    # Print metadata
+    print(get_metadata(args.file))
+
+    # Kill the javabridge vm
+    jb.kill_vm()
 
 
 if __name__ == '__main__':
-	exit(main())
+    exit(main())
 
 
 
