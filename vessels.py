@@ -2,8 +2,8 @@
 
 import argparse
 import numpy
+import javabridge
 import bioformats as bf
-import javabridge as jb
 from PIL import Image
 
 
@@ -29,17 +29,14 @@ def main() -> int:
     args = parser.parse_args()
 
     # Start javabridge vm
-    jb.start_vm(class_path=bf.JARS, max_heap_size='2G')
+    javabridge.start_vm(class_path=bf.JARS, max_heap_size='2G')
 
     # Print metadata
     print(get_metadata(args.file))
 
     # Kill the javabridge vm
-    jb.kill_vm()
+    javabridge.kill_vm()
 
 
 if __name__ == '__main__':
     exit(main())
-
-
-
