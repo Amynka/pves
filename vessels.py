@@ -56,10 +56,10 @@ def main() -> int:
     # m = get_metadata(args.file)
     # print(m)
     if args.load:
-        ims = np.load('ims.npy')
+        ims = np.load(args.file + '.npy')
     else:
         ims = read_images(args.file)
-        np.save('ims.npy',ims)
+        np.save(args.file + '.npy', ims)
     print(ims.shape)
     print(ims[0])
 
