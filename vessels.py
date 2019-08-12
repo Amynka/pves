@@ -28,14 +28,14 @@ def read_images(filename):
         print('Image depth: {}'.format(z_total))
         print('Number of frames in the image: {}'.format(t_total))
 
-        # Hyperstacks not suspported yet
+        # Hyperstacks not supported yet
         if 1 not in [z_total, t_total]:
             raise TypeError('Only 4D images are currently supported.')
 
         #metadata = get_metadata(filename)
 
         images = []
-        for time in tqdm.tqdm(range(t_total), "T"):
+        for time in tqdm.tqdm(range(t_total), "Loading frames"):
             # Read image
             image = reader.read(t=time, rescale=False)
             images.append(image)
@@ -46,15 +46,22 @@ def main() -> int:
     """Parameters"""
     parser = argparse.ArgumentParser()
     parser.add_argument('-f', '--file', help='File to be processed', required=True)
+    parser.add_argument('-l', '--load', help='Load frames from npy', action='store_true')
     args = parser.parse_args()
 
     # Start javabridge vm
     javabridge.start_vm(class_path=bf.JARS, max_heap_size='8G')
 
     # Print metadata
-    m = get_metadata(args.file)
-    print(m)
-    print(read_images(args.file))
+    # m = get_metadata(args.file)
+    # print(m)
+    if args.load:
+        ims = np.load('ims.npy')
+    else:
+        ims = read_images(args.file)
+        np.save('ims.npy',ims)
+    print(ims.shape)
+    print(ims[0])
 
     # Kill the javabridge vm
     javabridge.kill_vm()
