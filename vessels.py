@@ -3,6 +3,7 @@
 import argparse
 import sys
 import tqdm
+import xml.dom.minidom
 import javabridge
 import numpy as np
 import bioformats as bf
@@ -12,6 +13,15 @@ import bioformats as bf
 def get_metadata(filename):
     metadata = bf.get_omexml_metadata(filename)
     return bf.omexml.OMEXML(metadata)
+
+
+# Save metadata to pretty xml
+def save_metadata(metadata, filename):
+    data = xml.dom.minidom.parseString(metadata.to_xml())
+    pretty_xml_as_string = data.toprettyxml()
+
+    with open(filename + '-metadata.xml', 'w') as xmlfile:
+        xmlfile.write(pretty_xml_as_string)
 
 
 # Read the image
@@ -52,9 +62,9 @@ def main() -> int:
     # Start javabridge vm
     javabridge.start_vm(class_path=bf.JARS, max_heap_size='8G')
 
-    # Print metadata
-    # m = get_metadata(args.file)
-    # print(m)
+    # Get and save metadata
+    m = get_metadata(args.file)
+    save_metadata(m, args.file)
     if args.load:
         ims = np.load(args.file + '.npy')
     else:
