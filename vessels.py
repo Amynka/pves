@@ -42,14 +42,16 @@ def read_images(filename):
         if 1 not in [z_total, t_total]:
             raise TypeError('Only 4D images are currently supported.')
 
-        #metadata = get_metadata(filename)
-
-        images = []
+        right, left = [], []
         for time in tqdm.tqdm(range(t_total), "Loading frames"):
             # Read image
             image = reader.read(t=time, rescale=False)
-            images.append(image)
-    return np.asarray(images)
+            a, b = np.split(image, 2, axis=1)
+            left.append(a)
+            right.append(b)
+            #images.append(image)
+    #return np.asarray(images)
+    return np.asarray(right), np.asarray(left)
 
 
 def main() -> int:
@@ -66,14 +68,28 @@ def main() -> int:
     m = get_metadata(args.file)
     save_metadata(m, args.file)
     if args.load:
-        ims = np.load(args.file + '.npy')
+        # ims = np.load(args.file + '.npy')
+        right = np.load(args.file + '-right.npy')
+        left = np.load(args.file + '-left.npy')
     else:
-        ims = read_images(args.file)
-        np.save(args.file + '.npy', ims)
-    print(ims.shape)
-    print(ims[0])
+        # ims = read_images(args.file)
+        # np.save(args.file + '.npy', ims)
+        right, left = read_images(args.file)
+        np.save(args.file + '-right.npy', right)
+        np.save(args.file + '-left.npy', left)
+        print(right.shape, left.shape)
 
-    # Kill the javabridge vm
+    from matplotlib import pyplot as plt
+    #print(ims[2000].shape)
+    fig = plt.figure()
+    ax1 = fig.add_subplot(2, 2, 1)
+    ax1.imshow(left[0])
+    ax2 = fig.add_subplot(2, 2, 2)
+    ax2.imshow(right[0])
+    # plt.imshow(ims[0])
+    plt.show()
+
+    # Kill javabridge vm
     javabridge.kill_vm()
 
 
