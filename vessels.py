@@ -68,25 +68,22 @@ def main() -> int:
     m = get_metadata(args.file)
     save_metadata(m, args.file)
     if args.load:
-        # ims = np.load(args.file + '.npy')
         right = np.load(args.file + '-right.npy')
         left = np.load(args.file + '-left.npy')
     else:
-        # ims = read_images(args.file)
-        # np.save(args.file + '.npy', ims)
         right, left = read_images(args.file)
         np.save(args.file + '-right.npy', right)
         np.save(args.file + '-left.npy', left)
         print(right.shape, left.shape)
 
     from matplotlib import pyplot as plt
-    #print(ims[2000].shape)
     fig = plt.figure()
-    ax1 = fig.add_subplot(2, 2, 1)
+    ax1 = fig.add_subplot(2, 3, 1)
     ax1.imshow(left[0])
-    ax2 = fig.add_subplot(2, 2, 2)
+    ax2 = fig.add_subplot(2, 3, 2)
     ax2.imshow(right[0])
-    # plt.imshow(ims[0])
+    ax3 = fig.add_subplot(2, 3, 3)
+    ax3.imshow(np.concatenate((left[0],right[0]), axis=1))
     plt.show()
 
     # Kill javabridge vm
