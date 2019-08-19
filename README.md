@@ -3,10 +3,20 @@
 Install numpy, python-bioformats:
 
 ```bash
-pip3 install javabridge numpy python-bioformats
+pip3 install --user javabridge numpy python-bioformats matplotlib tqdm
 ```
 
-Place desired image to the folder and name it exp.vsi ( for now ) and run:
+To see help run:
 ```bash
-python3 vessels.py -f filename.vsi
+python3 vessels.py --help
+```
+
+Example how to load files and save to npy object:
+```bash
+python3 vessels.py -f Folder/file.vsi
+```
+
+Example how to load from npy object:
+```bash
+python3 vessels.py -f Folder/file.vsi -l
 ```
