@@ -10,7 +10,6 @@ import bioformats as bf
 import matplotlib.widgets as widgets
 
 
-
 # Read metadata and return metadata as object
 def get_metadata(filename):
     metadata = bf.get_omexml_metadata(filename)
@@ -68,6 +67,7 @@ def line_select_callback_2(eclick, erelease):
     x2, y2 = erelease.xdata, erelease.ydata
     print("(%3.2f, %3.2f) --> (%3.2f, %3.2f)" % (x1, y1, x2, y2))
     print(" The button you used were: %s %s" % (eclick.button, erelease.button))
+
 
 def line_select_callback(eclick, erelease):
     click[:] = eclick.xdata, eclick.ydata
@@ -143,7 +143,7 @@ def main() -> int:
     # Show random cropped image
     fig = plt.figure()
     ax1 = fig.add_subplot(111)
-    ax1.imshow(lcrop[12])
+    ax1.imshow(np.concatenate((lcrop[12], rcrop[12]), axis=1))
     plt.show()
 
 
