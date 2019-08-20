@@ -136,14 +136,25 @@ def main() -> int:
 
     # Crop according to selected region
     lcrop, rcrop = [], []
+    l_avg, r_avg = [], []
     for i in range(0, len(left)-1):
         rcrop.append(crop(right[i], int(click[0]), int(click[1]), int(release[0]), int(release[1])))
         lcrop.append(crop(left[i], int(click[0]), int(click[1]), int(release[0]), int(release[1])))
+        l_avg.append(np.average(left[i]))
+        r_avg.append(np.average(right[i]))
 
+    rcrop, lcrop = np.asarray(rcrop), np.asarray(lcrop)
+    np_subtr = np.subtract(lcrop[12], rcrop[12])
+    np_subtr2 = np.subtract(rcrop[12], lcrop[12])
     # Show random cropped image
+    print(lcrop.shape, rcrop.shape)
     fig = plt.figure()
-    ax1 = fig.add_subplot(111)
-    ax1.imshow(np.concatenate((lcrop[12], rcrop[12]), axis=1))
+    ax1 = fig.add_subplot(3, 1, 1)
+    ax1.imshow(np.concatenate((lcrop[12], rcrop[12], np_subtr, np_subtr2), axis=1))
+    ax2 = fig.add_subplot(3, 1, 2)
+    ax2.plot(l_avg, label='Astrocytes')
+    ax2.plot(r_avg, label='Neurons')
+    ax2.legend()
     plt.show()
 
 
