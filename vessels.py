@@ -4,13 +4,12 @@ import argparse
 import os
 import sys
 import tqdm
-from scipy import signal
 import xml.dom.minidom
 import javabridge
 import fnmatch
 import numpy as np
 import bioformats as bf
-from scipy import stats
+from scipy import signal
 import matplotlib.widgets as widgets
 
 
@@ -34,7 +33,7 @@ def read_first(filename):
     with bf.ImageReader(filename) as reader:
         image = reader.read(t=0, rescale=False)
         a, b = np.split(image, 2, axis=1)
-    return np.asarray(a)
+    return np.asarray(a), np.asarray(b)
 
 
 # Read the image
@@ -115,24 +114,30 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument('-f', '--file', help='File to be processed', required=True)
     parser.add_argument('-l', '--load', help='Load frames from npy', action='store_true')
+    parser.add_argument('-nl', '--neuronsleft', help='Neurons on left side. Default: right', action='store_true')
     args = parser.parse_args()
 
     if args.load:
-        # TO DO parametrize the load for more files ======
-
+        # Load files
+        print('File name:')
         print(args.file.split('/')[0])
+        print('Files to be loaded: ')
         print(fnmatch.filter(os.listdir('.'), '*' + args.file.split('/')[1] + '-left.npy'))
+        print(fnmatch.filter(os.listdir('.'), '*' + args.file.split('/')[1] + '-right.npy'))
         # Load the files
         left_files = fnmatch.filter(os.listdir('.'), '*' + args.file.split('/')[1] + '-left.npy')
         right_files = fnmatch.filter(os.listdir('.'), '*' + args.file.split('/')[1] + '-right.npy')
-        print(fnmatch.filter(os.listdir('.'), '*' + args.file.split('/')[1] + '-right.npy'))
 
         # Start javabridge
         javabridge.start_vm(class_path=bf.JARS, max_heap_size='8G')
         # Read the first file and make crop
-        first_image = read_first(args.file)
+        left, right = read_first(args.file)
         javabridge.kill_vm()
 
+        if args.neuronsleft:
+            first_image = left
+        else:
+            first_image = right
         # Select region in the function
         from matplotlib import pyplot as plt
         print("\n      click  -->  release")
@@ -151,17 +156,10 @@ def main() -> int:
 
         lcrop, rcrop = [], []
         l_avg, r_avg = [], []
-        print(int(release[0]))
-        print(int(release[1]))
-        print(int(click[0]))
-        print(int(click[1]))
-
-        for i in range(len(left_files)):
-            print(i)
+        for i in tqdm.tqdm(range(len(left_files)), "Loading frames"):
             right, left = [], []
             right = np.load(right_files[i])
             left = np.load(left_files[i])
-            print(right.shape, left.shape)
             for j in range(0, len(left)-1):
                 lcrop, rcrop = [], []
                 rcrop.append(crop(right[j], int(click[0]), int(click[1]), int(release[0]), int(release[1])))
@@ -174,7 +172,6 @@ def main() -> int:
         #return 0
     else:
         # Start the java bridge
-        # javabridge.start_vm(class_path=bf.JARS + ['/Library/Frameworks/Python.framework/Versions/3.7/lib/python3.7/site-packages/bioformats/jars/loci_tools.jar'], max_heap_size='8G')
         javabridge.start_vm(class_path=bf.JARS, max_heap_size='8G')
         # Get and save metadata
         m = get_metadata(args.file)
@@ -187,71 +184,32 @@ def main() -> int:
         return 0
 
     from matplotlib import pyplot as plt
-    # fig = plt.figure()
-    # ax1 = fig.add_subplot(2, 3, 1)
-    # ax1.imshow(left[0])
-    # ax2 = fig.add_subplot(2, 3, 2)
-    # ax2.imshow(right[0])
-    # ax3 = fig.add_subplot(2, 3, 3)
-    # ax3.imshow(np.concatenate((left[0], right[0]), axis=1))
-    # plt.show()
-    # print(left.shape, right.shape, len(left))
-
-    # # Select region in the function
-    # print("\n      click  -->  release")
-    # fig = plt.figure()
-    # ax = fig.add_subplot(111)
-    # ax.imshow(right[0])
-    # # drawtype is 'box' or 'line' or 'none'
-    # toggle_selector.RS = widgets.CircleSelector(ax, line_select_callback,
-    #                                    drawtype='box', useblit=True,
-    #                                    button=[1, 3],  # don't use middle button
-    #                                    minspanx=5, minspany=5,
-    #                                    spancoords='pixels',
-    #                                    interactive=True)
-    # plt.connect('key_press_event', toggle_selector)
-    # plt.show()
-
-    # # Crop according to selected region and average region
-
-    # lcrop, rcrop = [], []
-    # l_avg, r_avg = [], []
-    # for i in range(0, len(left)-1):
-    #     rcrop.append(crop(right[i], int(click[0]), int(click[1]), int(release[0]), int(release[1])))
-    #     lcrop.append(crop(left[i], int(click[0]), int(click[1]), int(release[0]), int(release[1])))
-    #     l_avg.append(np.average(left[i]))
-    #     r_avg.append(np.average(right[i]))
-
-    # rcrop, lcrop = np.asarray(rcrop), np.asarray(lcrop)
-    # np_subtr = np.subtract(lcrop[12], rcrop[12])
-    # np_subtr2 = np.subtract(rcrop[12], lcrop[12])
-    # # Show random cropped image
-    # fig = plt.figure()
-    # ax1 = fig.add_subplot(3, 1, 1)
-    # ax1.imshow(np.concatenate((lcrop[12], rcrop[12], np_subtr, np_subtr2), axis=1))
 
     # Plot the averages into the graphs
     fig = plt.figure()
-    ax1 = fig.add_subplot(2,1,1)
+    ax1 = fig.add_subplot(2, 1, 1)
     ax1.plot(l_avg, label='Astrocytes')
     ax1.legend()
-    ax2 = fig.add_subplot(2,1,2)
+    ax2 = fig.add_subplot(2, 1, 2)
     ax2.plot(r_avg, label='Neurons')
     ax2.legend()
     plt.show()
 
     fig = plt.figure()
-    ax1 = fig.add_subplot(2, 1, 1)
-    ax1.plot(l_avg, label='Neurons', color='blue')
+    ax1 = fig.add_subplot(4, 1, 1)
+    ax1.plot(l_avg, label='Astrocytes', color='blue')
     ax1.legend()
     detrend = signal.detrend(l_avg)
-    ax2 = fig.add_subplot(2,1,2)
-    ax2.plot(detrend, label='Detrend neurons', color='red')
+    ax2 = fig.add_subplot(4, 1, 2)
+    ax2.plot(detrend, label='Detrend astrocytes', color='red')
     ax2.legend()
-    #ax1.plot(r_avg, label='Neurons', color='purple')
-    #detrend2 = signal.detrend(r_avg)
-    #ax1.plot(detrend2, label='Detrend neurons', color='green')
-    #ax1.legend()
+    ax3 = fig.add_subplot(4, 1, 3)
+    ax3.plot(r_avg, label='Neurons', color='purple')
+    ax3.legend()
+    ax4 = fig.add_subplot(4, 1, 4)
+    detrend2 = signal.detrend(r_avg)
+    ax4.plot(detrend2, label='Detrend neurons', color='green')
+    ax4.legend()
     plt.show()
 
 # Global variables
