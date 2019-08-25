@@ -4,11 +4,13 @@ import argparse
 import os
 import sys
 import tqdm
+from scipy import signal
 import xml.dom.minidom
 import javabridge
 import fnmatch
 import numpy as np
 import bioformats as bf
+from scipy import stats
 import matplotlib.widgets as widgets
 
 
@@ -31,9 +33,8 @@ def save_metadata(metadata, filename):
 def read_first(filename):
     with bf.ImageReader(filename) as reader:
         image = reader.read(t=0, rescale=False)
-        #a, b = np.split(image, 2, axis=1)
-    #return np.asarray(a), np.asarray(b)
-    return np.asarray(image)
+        a, b = np.split(image, 2, axis=1)
+    return np.asarray(a)
 
 
 # Read the image
@@ -119,32 +120,60 @@ def main() -> int:
     if args.load:
         # TO DO parametrize the load for more files ======
 
-        # print(args.file.split('/')[0])
-        # print(fnmatch.filter(os.listdir('.'), '*' + args.file.split('/')[1] + '-left.npy'))
-        # print(fnmatch.filter(os.listdir('.'), '*' + args.file.split('/')[1] + '-right.npy'))
-        # javabridge.start_vm(class_path=bf.JARS, max_heap_size='8G')
-        # r = read_first(args.file)
-        # javabridge.kill_vm()
-        # # Select region in the function
-        # from matplotlib import pyplot as plt
-        # print("\n      click  -->  release")
-        # fig = plt.figure()
-        # ax = fig.add_subplot(111)
-        # ax.imshow(r)
-        # # drawtype is 'box' or 'line' or 'none'
-        # toggle_selector.RS = widgets.RectangleSelector(ax, line_select_callback,
-        #                                drawtype='box', useblit=True,
-        #                                button=[1, 3],  # don't use middle button
-        #                                minspanx=5, minspany=5,
-        #                                spancoords='pixels',
-        #                                interactive=True)
-        # plt.connect('key_press_event', toggle_selector)
-        # plt.show()
+        print(args.file.split('/')[0])
+        print(fnmatch.filter(os.listdir('.'), '*' + args.file.split('/')[1] + '-left.npy'))
+        # Load the files
+        left_files = fnmatch.filter(os.listdir('.'), '*' + args.file.split('/')[1] + '-left.npy')
+        right_files = fnmatch.filter(os.listdir('.'), '*' + args.file.split('/')[1] + '-right.npy')
+        print(fnmatch.filter(os.listdir('.'), '*' + args.file.split('/')[1] + '-right.npy'))
 
-        right = np.load(args.file + '-right.npy')
-        left = np.load(args.file + '-left.npy')
+        # Start javabridge
+        javabridge.start_vm(class_path=bf.JARS, max_heap_size='8G')
+        # Read the first file and make crop
+        first_image = read_first(args.file)
+        javabridge.kill_vm()
+
+        # Select region in the function
+        from matplotlib import pyplot as plt
+        print("\n      click  -->  release")
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        ax.imshow(first_image)
+        # Drawtype is 'box' or 'line' or 'none'
+        toggle_selector.RS = widgets.RectangleSelector(ax, line_select_callback,
+                                       drawtype='box', useblit=True,
+                                       button=[1, 3],  # don't use middle button
+                                       minspanx=5, minspany=5,
+                                       spancoords='pixels',
+                                       interactive=True)
+        plt.connect('key_press_event', toggle_selector)
+        plt.show()
+
+        lcrop, rcrop = [], []
+        l_avg, r_avg = [], []
+        print(int(release[0]))
+        print(int(release[1]))
+        print(int(click[0]))
+        print(int(click[1]))
+
+        for i in range(len(left_files)):
+            print(i)
+            right, left = [], []
+            right = np.load(right_files[i])
+            left = np.load(left_files[i])
+            print(right.shape, left.shape)
+            for j in range(0, len(left)-1):
+                lcrop, rcrop = [], []
+                rcrop.append(crop(right[j], int(click[0]), int(click[1]), int(release[0]), int(release[1])))
+                lcrop.append(crop(left[j], int(click[0]), int(click[1]), int(release[0]), int(release[1])))
+                l_avg.append(np.average(left[j]))
+                r_avg.append(np.average(right[j]))
+
+        #right = np.load(args.file + '-right.npy')
+        #left = np.load(args.file + '-left.npy')
         #return 0
     else:
+        # Start the java bridge
         javabridge.start_vm(class_path=bf.JARS, max_heap_size='8G')
         # Get and save metadata
         m = get_metadata(args.file)
@@ -157,55 +186,60 @@ def main() -> int:
         return 0
 
     from matplotlib import pyplot as plt
-    fig = plt.figure()
-    ax1 = fig.add_subplot(2, 3, 1)
-    ax1.imshow(left[0])
-    ax2 = fig.add_subplot(2, 3, 2)
-    ax2.imshow(right[0])
-    ax3 = fig.add_subplot(2, 3, 3)
-    ax3.imshow(np.concatenate((left[0], right[0]), axis=1))
-    plt.show()
-    print(left.shape, right.shape, len(left))
+    # fig = plt.figure()
+    # ax1 = fig.add_subplot(2, 3, 1)
+    # ax1.imshow(left[0])
+    # ax2 = fig.add_subplot(2, 3, 2)
+    # ax2.imshow(right[0])
+    # ax3 = fig.add_subplot(2, 3, 3)
+    # ax3.imshow(np.concatenate((left[0], right[0]), axis=1))
+    # plt.show()
+    # print(left.shape, right.shape, len(left))
 
-    # Select region in the function
-    print("\n      click  -->  release")
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    ax.imshow(right[0])
-    # drawtype is 'box' or 'line' or 'none'
-    toggle_selector.RS = widgets.RectangleSelector(ax, line_select_callback,
-                                       drawtype='box', useblit=True,
-                                       button=[1, 3],  # don't use middle button
-                                       minspanx=5, minspany=5,
-                                       spancoords='pixels',
-                                       interactive=True)
-    plt.connect('key_press_event', toggle_selector)
-    plt.show()
+    # # Select region in the function
+    # print("\n      click  -->  release")
+    # fig = plt.figure()
+    # ax = fig.add_subplot(111)
+    # ax.imshow(right[0])
+    # # drawtype is 'box' or 'line' or 'none'
+    # toggle_selector.RS = widgets.CircleSelector(ax, line_select_callback,
+    #                                    drawtype='box', useblit=True,
+    #                                    button=[1, 3],  # don't use middle button
+    #                                    minspanx=5, minspany=5,
+    #                                    spancoords='pixels',
+    #                                    interactive=True)
+    # plt.connect('key_press_event', toggle_selector)
+    # plt.show()
 
-    # Crop according to selected region and average region
-    lcrop, rcrop = [], []
-    l_avg, r_avg = [], []
-    for i in range(0, len(left)-1):
-        rcrop.append(crop(right[i], int(click[0]), int(click[1]), int(release[0]), int(release[1])))
-        lcrop.append(crop(left[i], int(click[0]), int(click[1]), int(release[0]), int(release[1])))
-        l_avg.append(np.average(left[i]))
-        r_avg.append(np.average(right[i]))
+    # # Crop according to selected region and average region
 
-    rcrop, lcrop = np.asarray(rcrop), np.asarray(lcrop)
-    np_subtr = np.subtract(lcrop[12], rcrop[12])
-    np_subtr2 = np.subtract(rcrop[12], lcrop[12])
-    # Show random cropped image
-    fig = plt.figure()
-    ax1 = fig.add_subplot(3, 1, 1)
-    ax1.imshow(np.concatenate((lcrop[12], rcrop[12], np_subtr, np_subtr2), axis=1))
+    # lcrop, rcrop = [], []
+    # l_avg, r_avg = [], []
+    # for i in range(0, len(left)-1):
+    #     rcrop.append(crop(right[i], int(click[0]), int(click[1]), int(release[0]), int(release[1])))
+    #     lcrop.append(crop(left[i], int(click[0]), int(click[1]), int(release[0]), int(release[1])))
+    #     l_avg.append(np.average(left[i]))
+    #     r_avg.append(np.average(right[i]))
+
+    # rcrop, lcrop = np.asarray(rcrop), np.asarray(lcrop)
+    # np_subtr = np.subtract(lcrop[12], rcrop[12])
+    # np_subtr2 = np.subtract(rcrop[12], lcrop[12])
+    # # Show random cropped image
+    # fig = plt.figure()
+    # ax1 = fig.add_subplot(3, 1, 1)
+    # ax1.imshow(np.concatenate((lcrop[12], rcrop[12], np_subtr, np_subtr2), axis=1))
 
     # Plot the averages into the graphs
-    ax2 = fig.add_subplot(3, 1, 2)
-    ax2.plot(l_avg, label='Astrocytes')
-    ax2.legend()
-    ax3 = fig.add_subplot(3, 1, 3)
-    ax3.plot(r_avg, label='Neurons')
-    ax3.legend()
+    fig = plt.figure()
+    ax1 = fig.add_subplot(2, 1, 1)
+    ax1.plot(l_avg, label='Left', color='blue')
+    detrend = signal.detrend(l_avg)
+    ax1.plot(detrend, label='Detrend left', color='red')
+    ax1.legend()
+    ax1.plot(r_avg, label='Right', color='purple')
+    detrend2 = signal.detrend(r_avg)
+    ax1.plot(detrend2, label='Detrend right', color='green')
+    ax1.legend()
     plt.show()
 
 
