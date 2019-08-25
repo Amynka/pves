@@ -174,6 +174,7 @@ def main() -> int:
         #return 0
     else:
         # Start the java bridge
+        # javabridge.start_vm(class_path=bf.JARS + ['/Library/Frameworks/Python.framework/Versions/3.7/lib/python3.7/site-packages/bioformats/jars/loci_tools.jar'], max_heap_size='8G')
         javabridge.start_vm(class_path=bf.JARS, max_heap_size='8G')
         # Get and save metadata
         m = get_metadata(args.file)
@@ -231,17 +232,27 @@ def main() -> int:
 
     # Plot the averages into the graphs
     fig = plt.figure()
-    ax1 = fig.add_subplot(2, 1, 1)
-    ax1.plot(l_avg, label='Left', color='blue')
-    detrend = signal.detrend(l_avg)
-    ax1.plot(detrend, label='Detrend left', color='red')
+    ax1 = fig.add_subplot(2,1,1)
+    ax1.plot(l_avg, label='Astrocytes')
     ax1.legend()
-    ax1.plot(r_avg, label='Right', color='purple')
-    detrend2 = signal.detrend(r_avg)
-    ax1.plot(detrend2, label='Detrend right', color='green')
-    ax1.legend()
+    ax2 = fig.add_subplot(2,1,2)
+    ax2.plot(r_avg, label='Neurons')
+    ax2.legend()
     plt.show()
 
+    fig = plt.figure()
+    ax1 = fig.add_subplot(2, 1, 1)
+    ax1.plot(l_avg, label='Neurons', color='blue')
+    ax1.legend()
+    detrend = signal.detrend(l_avg)
+    ax2 = fig.add_subplot(2,1,2)
+    ax2.plot(detrend, label='Detrend neurons', color='red')
+    ax2.legend()
+    #ax1.plot(r_avg, label='Neurons', color='purple')
+    #detrend2 = signal.detrend(r_avg)
+    #ax1.plot(detrend2, label='Detrend neurons', color='green')
+    #ax1.legend()
+    plt.show()
 
 # Global variables
 click = [None, None]
