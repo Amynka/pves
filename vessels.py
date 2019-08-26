@@ -88,15 +88,15 @@ def line_select_callback_2(eclick, erelease):
     global x1, x2, y1, y2
     x1, y1 = eclick.xdata, eclick.ydata
     x2, y2 = erelease.xdata, erelease.ydata
-    print("(%3.2f, %3.2f) --> (%3.2f, %3.2f)" % (x1, y1, x2, y2))
-    print(" The button you used were: %s %s" % (eclick.button, erelease.button))
+    print('({:f}, {:f}) --> ({:f}, {:f})'.format(x1, y1, x2, y2))
+    print('The button you used were: {} {}'.format(eclick.button, erelease.button))
 
 
 def line_select_callback(eclick, erelease):
     click[:] = eclick.xdata, eclick.ydata
     release[:] = erelease.xdata, erelease.ydata
-    print("(%3.2f, %3.2f) --> (%3.2f, %3.2f)" % (eclick.xdata, eclick.ydata, erelease.xdata, erelease.ydata))
-    print(" The button you used were: %s %s" % (eclick.button, erelease.button))
+    print('({:f}, {:f}) --> ({:f}, {:f})'.format(eclick.xdata, eclick.ydata, erelease.xdata, erelease.ydata))
+    print('The button you used were: {} {}'.format(eclick.button, erelease.button))
 
 
 def toggle_selector(event):
